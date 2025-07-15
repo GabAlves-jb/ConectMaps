@@ -1,0 +1,115 @@
+<canvas id="mapa" width="800" height="600" style="border:1px solid #000"></canvas>
+<script>
+const canvas = document.getElementById('mapa');
+const ctx = canvas.getContext('2d');
+
+const cidades = [
+  { nome: "São Paulo", x: 200, y: 300, info: "População: 12M" },
+  { nome: "Rio de Janeiro", x: 300, y: 400, info: "População: 6.7M" },
+  { nome: "Belo Horizonte", x: 250, y: 250, info: "População: 2.5M" }
+];
+
+const ligacoes = [
+  [0, 1],
+  [0, 2],
+  [1, 2]
+];
+
+let mouse = { x: 0, y: 0 };
+let linhaHover = null;
+
+function desenhar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Desenhar linhas
+  ligacoes.forEach(([a, b], index) => {
+    const { x: x1, y: y1 } = cidades[a];
+    const { x: x2, y: y2 } = cidades[b];
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+
+    // Se mouse está sobre esta linha, muda a cor
+    if (linhaHover === index) {
+      ctx.strokeStyle = 'orange';
+      ctx.lineWidth = 3;
+    } else {
+      ctx.strokeStyle = 'green';
+      ctx.lineWidth = 1;
+    }
+
+    ctx.stroke();
+  });
+
+  // Desenhar bolinhas
+  cidades.forEach(cidade => {
+    ctx.beginPath();
+    ctx.arc(cidade.x, cidade.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = 'blue';
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // Mostrar tooltip se estiver sobre linha
+  if (linhaHover !== null) {
+    ctx.fillStyle = 'black';
+    ctx.font = '14px Arial';
+    ctx.fillText('Fibra da Conect', mouse.x + 10, mouse.y + 10);
+  }
+}
+
+// Verifica se o mouse está perto de uma linha (com tolerância)
+function estaSobreLinha(x, y, x1, y1, x2, y2, tolerancia = 6) {
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const ponto = (A * C + B * D) / (C * C + D * D);
+  const pontoMaisProximoX = x1 + ponto * C;
+  const pontoMaisProximoY = y1 + ponto * D;
+
+  const dx = x - pontoMaisProximoX;
+  const dy = y - pontoMaisProximoY;
+  const distancia = Math.sqrt(dx * dx + dy * dy);
+
+  // Está dentro do segmento da linha?
+  const dentroDoSegmento = ponto >= 0 && ponto <= 1;
+
+  return distancia < tolerancia && dentroDoSegmento;
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const { offsetX, offsetY } = e;
+  mouse.x = offsetX;
+  mouse.y = offsetY;
+
+  linhaHover = null;
+
+  ligacoes.forEach(([a, b], index) => {
+    const { x: x1, y: y1 } = cidades[a];
+    const { x: x2, y: y2 } = cidades[b];
+
+    if (estaSobreLinha(offsetX, offsetY, x1, y1, x2, y2)) {
+      linhaHover = index;
+    }
+  });
+
+  desenhar();
+});
+
+canvas.addEventListener('click', (e) => {
+  const { offsetX, offsetY } = e;
+
+  cidades.forEach(cidade => {
+    const dx = cidade.x - offsetX;
+    const dy = cidade.y - offsetY;
+    if (dx * dx + dy * dy < 100) {
+      alert(cidade.nome + "\n" + cidade.info);
+    }
+  });
+});
+
+desenhar();
+</script>
